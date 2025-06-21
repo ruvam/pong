@@ -12,6 +12,10 @@ struct Pos(Vec2);
 #[require(Pos)]
 struct Ball;
 
+#[derive(Component)]
+#[require(Pos)]
+struct Paddle;
+
 const BALL_SIZE: f32 = 5.;
 
 // fn print_world() {
@@ -47,6 +51,35 @@ fn spawn_ball(
     ));
 }
 
+fn move_ball(mut ball: Query<&mut Pos, With<Ball>>) {
+    if let Ok(mut pos) = ball.single_mut() {
+        pos.0.x += 1.;
+    }
+}
+
+const PADDLE_WIDTH: f32 = 10.;
+const PADDLE_HEIGTH: f32 = 50.;
+
+fn spawn_paddles(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let shape = Rectangle::new(PADDLE_WIDTH, PADDLE_HEIGTH);
+    let color = Color::srgb(0., 0., 0.);
+
+    let mesh = meshes.add(shape);
+    let material = materials.add(color);
+
+    // commands.spawn_empty().insert();
+    commands.spawn((
+        Pos(Vec2::new(25., 0.)),
+        Paddle,
+        Mesh2d(mesh),
+        MeshMaterial2d(material),
+    ));
+}
+
 fn main() {
     let w = Some(Window {
         title: "Pong 🏓".into(),
@@ -58,8 +91,8 @@ fn main() {
             primary_window: w,
             ..default()
         }))
-        .add_systems(Startup, (spawn_ball, spawn_camera))
-        .add_systems(Update, make_pos)
+        .add_systems(Startup, (spawn_ball, spawn_camera, spawn_paddles))
+        .add_systems(Update, (move_ball, make_pos.after(move_ball)))
         .run();
 }
 fn make_pos(mut havepos: Query<(&mut Transform, &Pos)>) {
